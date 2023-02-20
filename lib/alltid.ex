@@ -1,37 +1,27 @@
 defmodule Alltid do
   @moduledoc """
   Alltid offers a simplified approach to editing deeply nested immutable data structures in Elixir.
-
-  Inspired by [Immer.js](https://immerjs.github.io/immer/) in JavaScript, Alltid allows a
+  Inspired by [Immer.js](https://immerjs.github.io/immer/) in JavaScript, Alltid allows a natural
   declarative syntax for manipulating deeply nested immutible data structures.
-
-  ```
-  require Alltid
-
-  data = %{accounts: [%{id: 1, balance: 200}, %{id: 2, balance: 150}]}
-
-  next = Alltid.produce(data, fn draft ->
-    draft[:accounts][0][:balance] <- draft[:accounts][0][:balance] + 50
-    draft[:accounts][1][:balance] <- draft[:accounts][1][:balance] - 50
-  end)
-  ```
-
-  This example is simply syntactic sugar for the following:
-
-  ```
-  data = %{accounts: [%{id: 1, balance: 200}, %{id: 2, balance: 150}]}
-
-  data
-  |> put_in([:accounts, Access.at(0), :balance], get_in([:accounts, Access.at(0), :balance]) + 50)
-  |> put_in([:accounts, Access.at(1), :balance], get_in([:accounts, Access.at(1), :balance]) - 50)
-  ```
   """
 
+  @spec produce(any, {:fn, list(), list()}) :: any
   @doc """
-  Produces an update to `value` using the provided `fun` function.  Within the scope of
-  `fun`, statements are rewritten in a
+  Produce an update to `value` using the provided `fun`, a function of arity 1.
 
-  Returns a copy of `value` with the edits from `fun` applied.
+  Within the provided function, the `<-` operator can be used to simulate assignment
+  of nested values within the provided argument:
+
+  ```
+  iex> Alltid.produce(%{counter: 10}, fn draft ->
+  ...> draft[:counter] <- draft[:counter] + 1
+  ...> draft[:value] <- "some value"
+  ...> end)
+
+  %{counter: 11, value: "some value"}
+  ```
+
+  Returns a copy of `value` with the changes from `fun` applied.
   """
   defmacro produce(value, fun) do
     quote do

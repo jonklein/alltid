@@ -2,7 +2,7 @@
 
 Alltid offers a simplified approach to editing deeply nested immutable data structures in Elixir.
 
-Inspired by [Immer.js](https://immerjs.github.io/immer/) in JavaScript, Alltid allows a
+Inspired by [Immer.js](https://immerjs.github.io/immer/) in JavaScript, Alltid allows a natural
 declarative syntax for manipulating deeply nested immutible data structures.
 
 ```
@@ -25,6 +25,11 @@ data
 |> put_in([:accounts, Access.at(0), :balance], get_in([:accounts, Access.at(0), :balance]) + 50)
 |> put_in([:accounts, Access.at(1), :balance], get_in([:accounts, Access.at(1), :balance]) - 50)
 ```
+
+While Alltid's `produce` pattern may appear to violate the spirit of functional programming, it
+simply uses Elixir's macro system and variable bindings to enable a more natural and familiar
+syntax, entirely isolated to the function passed in to `Alltid.produce`.  The code is still
+entirely functional under the hood.
 
 ## Installation
 
