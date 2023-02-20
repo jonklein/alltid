@@ -1,6 +1,6 @@
 defmodule Alltid do
   @moduledoc """
-  Alltid is a simple package enables simplified editing of deeply nested structures in Elixir.
+  Alltid offers a simplified approach to editing deeply nested immutable data structures in Elixir.
 
   Inspired by [Immer.js](https://immerjs.github.io/immer/) in JavaScript, Alltid allows a
   declarative syntax for manipulating deeply nested immutible data structures.
@@ -8,46 +8,43 @@ defmodule Alltid do
   ```
   require Alltid
 
-  data = %{positions: [%{x: 1, y: 0, z: 0}]}
+  data = %{accounts: [%{id: 1, balance: 200}, %{id: 2, balance: 150}]}
 
   next = Alltid.produce(data, fn draft ->
-    draft[:posts][0][:name] <- "Alltid"
-    draft[:posts][1][:name] <- "Elixir"
+    draft[:accounts][0][:balance] <- draft[:accounts][0][:balance] + 50
+    draft[:accounts][1][:balance] <- draft[:accounts][1][:balance] - 50
   end)
   ```
 
+  This example is simply syntactic sugar for the following:
+
   ```
-  data = %{posts: [%{id: 1, name: ""}, %{id: 2, name: ""}]}
+  data = %{accounts: [%{id: 1, balance: 200}, %{id: 2, balance: 150}]}
 
   data
-  |> put_in([:posts, Access.at(0), :name], get_in([:posts, Access.at(0), :name]) * 2)
-  |> put_in([:posts, Access.at(1), :name], "Elixir")
+  |> put_in([:accounts, Access.at(0), :balance], get_in([:accounts, Access.at(0), :balance]) + 50)
+  |> put_in([:accounts, Access.at(1), :balance], get_in([:accounts, Access.at(1), :balance]) - 50)
   ```
   """
 
-  @spec produce(any, {:fn, any, [{:->, any, [...]}, ...]}) ::
-          {{:., [{any, any}, ...], [{any, any, any}, ...]},
-           [{:closing, [...]} | {:column, 40}, ...], [...]}
   @doc """
   Produces an update to `value` using the provided `fun` function.  Within the scope of
   `fun`, statements are rewritten in a
 
   Returns a copy of `value` with the edits from `fun` applied.
   """
-
   defmacro produce(value, fun) do
     quote do
       unquote(rewrite_fn(fun)).(unquote(value))
     end
   end
 
-  @spec keypath(any) :: [...]
   defp keypath({var, _, nil}) do
     [var]
   end
 
-  defp keypath({{:., _, [Access, :get]}, _, [lhs, key]}) do
-    keypath(lhs) ++ [key(key)]
+  defp keypath({{:., _, [Access, :get]}, _, [lhs, rhs]}) do
+    keypath(lhs) ++ [key(rhs)]
   end
 
   defp keypath(_) do
@@ -67,24 +64,31 @@ defmodule Alltid do
   end
 
   defp rewrite(expr = {:<-, _, [lhs, rhs]}, acc) do
-    expr =
-      case keypath(lhs) do
-        [^acc] ->
-          rhs
+    case keypath(lhs) do
+      [^acc] ->
+        # `acc <- value`
+        {:=, [], [Macro.var(acc, nil), rewrite(rhs, acc)]}
 
-        [^acc | path] ->
-          quote do
-            put_in(unquote(Macro.var(acc, nil)), unquote(path), unquote(rewrite(rhs, acc)))
-          end
+      [^acc | path] ->
+        # `acc[...keypath...] <- value`
 
-        _ ->
-          expr
-      end
+        {:=, [],
+         [
+           Macro.var(acc, nil),
+           quote do
+             put_in(unquote(Macro.var(acc, nil)), unquote(path), unquote(rewrite(rhs, acc)))
+           end
+         ]}
 
-    {:=, [], [Macro.var(acc, nil), expr]}
+      _ ->
+        # an `x <- y` expression that doesn't include our acc var
+        expr
+    end
   end
 
   defp rewrite(expr = {op, ln, operands}, acc) do
+    # Re-write an operation by rewriting the operands
+
     case keypath(expr) do
       [^acc] ->
         expr
@@ -104,9 +108,13 @@ defmodule Alltid do
   end
 
   defp rewrite_fn({:fn, l1, [{:->, l2, [[{acc, l3, nil}], expr]}]}) do
-    # Rewrite the builder function
-    # - any statement matching "param[keypath] <- expr" is re-written to "param = put_in(param, keypath, expr)"
-    # - return `param` at the end
+    # Deconstruct the anonymous function definition: `fn acc -> [expr] end`, where `expr` is an
+    # expression or block of expressions.
+    #
+    # Rewrite the function as follows:
+    # - all "path" accesses to `acc` are re-written as get_in(acc, path), with list-index handling
+    # - expressions matching "param[keypath] <- expr" are re-written to "acc = put_in(acc, path, expr)"
+    # - `acc` is returned at the end
 
     code =
       case expr do

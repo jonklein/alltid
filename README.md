@@ -1,15 +1,29 @@
 # Alltid
 
-`Alltid` is a better way to work with nested immutable structures in Elixir.
-Inspired by `Immer.js` in JavaScript, alltid enables the syntax of setting 
-mutable data by keypath.
+Alltid offers a simplified approach to editing deeply nested immutable data structures in Elixir.
+
+Inspired by [Immer.js](https://immerjs.github.io/immer/) in JavaScript, Alltid allows a
+declarative syntax for manipulating deeply nested immutible data structures.
 
 ```
-Alltid.produce(%{}, fn j ->
-  j[:key1] <- 1
-  j[:key2] <- j[:key1] + 1
-  j[:key3] <- 3
+require Alltid
+
+data = %{accounts: [%{id: 1, balance: 200}, %{id: 2, balance: 150}]}
+
+next = Alltid.produce(data, fn draft ->
+  draft[:accounts][0][:balance] <- draft[:accounts][0][:balance] + 50
+  draft[:accounts][1][:balance] <- draft[:accounts][1][:balance] - 50
 end)
+```
+
+This example is simply syntactic sugar for the following:
+
+```
+data = %{accounts: [%{id: 1, balance: 200}, %{id: 2, balance: 150}]}
+
+data
+|> put_in([:accounts, Access.at(0), :balance], get_in([:accounts, Access.at(0), :balance]) + 50)
+|> put_in([:accounts, Access.at(1), :balance], get_in([:accounts, Access.at(1), :balance]) - 50)
 ```
 
 ## Installation
