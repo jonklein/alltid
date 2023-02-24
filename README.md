@@ -26,10 +26,10 @@ data
 |> put_in([:accounts, Access.at(1), :balance], get_in([:accounts, Access.at(1), :balance]) - 50)
 ```
 
-While Alltid's `produce` pattern may appear to violate the spirit of functional programming, it
+Though Alltid's `produce` pattern may appear to violate the spirit of functional programming, it
 simply uses Elixir's macro system and variable bindings to enable a more natural and familiar
 syntax, entirely isolated to the function passed in to `Alltid.produce`.  The code is still
-entirely functional under the hood.
+entirely functional.
 
 ## Installation
 

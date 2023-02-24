@@ -29,12 +29,14 @@ defmodule Alltid do
     end
   end
 
-  defp keypath({var, _, nil}) do
-    [var]
+  defp keypath({{:., _, [Access, :get]}, _, [lhs, rhs]}) do
+    # extract the path for a bracketed access expression:
+    # x[:y][:z] => [:x, :y, :z]
+    keypath(lhs) ++ [key(rhs)]
   end
 
-  defp keypath({{:., _, [Access, :get]}, _, [lhs, rhs]}) do
-    keypath(lhs) ++ [key(rhs)]
+  defp keypath({var, _, nil}) do
+    [var]
   end
 
   defp keypath(_) do
@@ -58,6 +60,7 @@ defmodule Alltid do
   end
 
   defp rewrite(expr = {:<-, _, [lhs, rhs]}, acc) do
+    # Re-write `lhs <- rhs` expression if `lhs` is composed of `acc`, either alone, or part of a keypath
     case keypath(lhs) do
       [^acc] ->
         # `acc <- value`
@@ -81,7 +84,7 @@ defmodule Alltid do
   end
 
   defp rewrite(expr = {op, ln, operands}, acc) do
-    # Re-write an operation by rewriting the operands
+    # Re-write any expression composed of `acc`, either alone, or part of a keypath
 
     case keypath(expr) do
       [^acc] ->
@@ -106,8 +109,8 @@ defmodule Alltid do
     # expression or block of expressions.
     #
     # Rewrite the function as follows:
-    # - all "path" accesses to `acc` are re-written as get_in(acc, path), with list-index handling
     # - expressions matching "param[keypath] <- expr" are re-written to "acc = put_in(acc, path, expr)"
+    # - expressions matching "param[keypath]" are re-written to "get_in(acc, path)", with list access handling added
     # - `acc` is returned at the end
 
     code =

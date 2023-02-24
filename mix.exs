@@ -10,8 +10,7 @@ defmodule Alltid.MixProject do
       deps: deps(),
       package: package(),
       docs: [
-        main: "README",
-        extras: ["README.md"]
+        extras: ["readme.md"]
       ]
     ]
   end
@@ -32,6 +31,8 @@ defmodule Alltid.MixProject do
     [
       licenses: ["Apache-2.0"],
       maintainers: ["Jon Klein"],
+      description: "Alltid offers a simplified approach to editing deeply nested immutable data structures in Elixir.",
+      links: %{"GitHub" => "https://github.com/jonklein/alltid"},
       source_url: "https://github.com/jonklein/alltid"
     ]
   end
