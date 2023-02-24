@@ -47,7 +47,11 @@ defmodule Alltid do
     end
   end
 
-  defp key(i), do: i
+  defp key(i) do
+    quote do
+      Access.key(unquote(i))
+    end
+  end
 
   defp rewrite([h | t], acc) do
     [rewrite(h, acc) | rewrite(t, acc)]

@@ -8,6 +8,7 @@ defmodule Alltid.MixProject do
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      package: package(),
       docs: [
         main: "README",
         extras: ["README.md"]
@@ -24,6 +25,14 @@ defmodule Alltid.MixProject do
   defp deps do
     [
       {:ex_doc, "~> 0.27", only: :dev, runtime: false}
+    ]
+  end
+
+  defp package do
+    [
+      licenses: ["Apache-2.0"],
+      maintainers: ["Jon Klein"],
+      source_url: "https://github.com/jonklein/alltid"
     ]
   end
 end

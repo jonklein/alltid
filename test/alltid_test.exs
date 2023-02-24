@@ -2,6 +2,10 @@ defmodule AlltidTest do
   use ExUnit.Case
   doctest Alltid
 
+  defmodule Struct do
+    defstruct [:field]
+  end
+
   test "it assigns a plain value" do
     assert 4 =
              Alltid.produce(2, fn j ->
@@ -18,15 +22,11 @@ defmodule AlltidTest do
              end)
   end
 
-  test "it sets a value in a keyword list" do
-    assert Keyword.equal?(
-             [key1: 1, key2: 2, key3: 3],
-             Alltid.produce([], fn j ->
-               j[:key1] <- 1
-               j[:key2] <- 2
-               j[:key3] <- 3
+  test "it sets values in a struct" do
+    assert [%Struct{field: 1}] ==
+             Alltid.produce([%Struct{field: 1}], fn j ->
+               j[0][:field] <- 1
              end)
-           )
   end
 
   test "it sets derived values " do
